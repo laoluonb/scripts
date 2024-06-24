@@ -27,14 +27,14 @@ hostname =
 
 
 const axios = require('axios');
-const kiwisWtoken = '1362e407a2514f898eb38bfccfd2d9c9'; // wx抓https://www.bdkjcdn.com/wapi/任意请求头
-const userId = 2050768976; // cq需要发送的qq号
+const kiwisWtoken = ''; // wx抓https://www.bdkjcdn.com/wapi/任意请求头
+const userId = qq号; // cq需要发送的qq号
 
 let logMessage = ''; // 该处默认即可
 
 // 通过post访问cq机器人的发送系统
 async function sendLogMessage() {
-  const url = 'http://10.10.10.26:5700/send_private_msg';
+  const url = 'http://10.10.10.26:5700/send_private_msg';//自己cq机器人的地址
   const data = {
     user_id: userId,
     message: logMessage.trim() // Trim any leading/trailing whitespace
