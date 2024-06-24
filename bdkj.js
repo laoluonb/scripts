@@ -3,6 +3,7 @@
 @Author: 老罗 2050768976
 @Date: 2024.06.24 19:47
 @Description: 本电科技每日签到 和设备详情
+              v1.1 添加了使用和购买加速卡功能
 ------------------------------------------
 变量名 kiwisWtoken
 变量值 wx抓https://www.bdkjcdn.com/wapi/任意请求头
@@ -23,12 +24,10 @@ hostname =
 7、所有直接或间接使用、查看此脚本的人均应该仔细阅读此声明。本人保留随时更改或补充此声明的权利。一旦您使用或复制了此脚本，即视为您已接受此免责声明。
 */
 
-
-
-
 const axios = require('axios');
 const kiwisWtoken = ''; // wx抓https://www.bdkjcdn.com/wapi/任意请求头
 const userId = qq号; // cq需要发送的qq号
+const goodsId = 2; // 1为加速1天卡 2为加速3天卡
 
 let logMessage = ''; // 该处默认即可
 
@@ -37,7 +36,7 @@ async function sendLogMessage() {
   const url = 'http://10.10.10.26:5700/send_private_msg';//自己cq机器人的地址
   const data = {
     user_id: userId,
-    message: logMessage.trim() // Trim any leading/trailing whitespace
+    message: logMessage.trim() // 修剪任何前后空白
   };
 
   try {
@@ -212,14 +211,126 @@ async function restTaoCoin() {
   }
 }
 
-// 用于编排流程的 Main 函数
+// 购买加速卡
+async function buy_goods() {
+  const config = {
+    method: 'GET',
+    url: 'https://www.bdkjcdn.com/wapi/activity/buy_goods_single?goodsId=' + goodsId,
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090a1b)XWEB/9165',
+      'xweb_xhr': '1',
+      'kiwis-wtoken': kiwisWtoken,
+      'content-type': 'application/json;charset=UTF-8',
+      'sec-fetch-site': 'cross-site',
+      'sec-fetch-mode': 'cors',
+      'sec-fetch-dest': 'empty',
+      'referer': 'https://servicewechat.com/wx003e375904180915/67/page-frame.html',
+      'accept-language': 'zh-CN,zh;q=0.9'
+    }
+  };
+
+  try {
+    const response = await axios.request(config);
+    const jsonData = response.data;
+    if (jsonData.success) {
+      logMessage += '加速卡购买成功\n';
+      console.log('加速卡购买成功');
+    } else {
+      logMessage += '加速卡购买失败\n';
+      console.log('加速卡购买失败');
+    }
+  } catch (error) {
+    logMessage += `加速卡购买失败: ${error.message}\n`;
+    console.log('加速卡购买失败:', error);
+  }
+}
+
+// 获取购买的加速卡id
+async function fetchDataAndProcessIds() {
+  let config = {
+    method: 'GET',
+    url: 'https://www.bdkjcdn.com/wapi/user/cards',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090a1b)XWEB/9165',
+      'xweb_xhr': '1',
+      'kiwis-wtoken': kiwisWtoken,
+      'content-type': 'application/json;charset=UTF-8',
+      'sec-fetch-site': 'cross-site',
+      'sec-fetch-mode': 'cors',
+      'sec-fetch-dest': 'empty',
+      'referer': 'https://servicewechat.com/wx003e375904180915/67/page-frame.html',
+      'accept-language': 'zh-CN,zh;q=0.9'
+    }
+  };
+
+  try {
+    const response = await axios.request(config);
+    if (response.status === 200) {
+      const data = response.data;
+      // 检查data是否是一个对象并且有一个数据数组
+      if (data && Array.isArray(data.data)) {
+        for (let item of data.data) {
+          const { id, cardStatus } = item;
+          if (cardStatus !== '使用中') {
+            await processId(id); // 在移动到下一个id之前，请在这里等待以确保完成
+          } else {
+            console.log(`ID ${id} 已在使用中，跳过处理`);
+          }
+        }
+      } else {
+        console.log('Expected an object with a data array but received:', data);
+      }
+    } else {
+      console.log(`Request failed with status ${response.status}`);
+    }
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  }
+}
+
+// 使用加速卡
+async function processId(id) {
+  const config = {
+    method: 'GET',
+    url: `https://www.bdkjcdn.com/wapi/user/use_card?id=${id}`,
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090a1b)XWEB/9165',
+      'xweb_xhr': '1',
+      'kiwis-wtoken': kiwisWtoken,
+      'content-type': 'application/json;charset=UTF-8',
+      'sec-fetch-site': 'cross-site',
+      'sec-fetch-mode': 'cors',
+      'sec-fetch-dest': 'empty',
+      'referer': 'https://servicewechat.com/wx003e375904180915/67/page-frame.html',
+      'accept-language': 'zh-CN,zh;q=0.9'
+    }
+  };
+
+  try {
+    const response = await axios.request(config);
+    const { success, errorMsg } = response.data;
+    if (success) {
+      logMessage += `ID ${id} 使用成功: ${errorMsg}\n`; // 添加到logMessage中
+      console.log(`ID ${id} 使用成功: ${errorMsg}`);
+    } else {
+      logMessage += `ID ${id} 使用失败: ${errorMsg}\n`; // 添加到logMessage中
+      console.log(`ID ${id} 使用失败: ${errorMsg}`);
+    }
+  } catch (error) {
+    logMessage += `ID ${id} 使用失败: ${error.message}\n`; // 添加到logMessage中
+    console.error(`ID ${id} 使用失败:`, error);
+  }
+}
+
+// 主流程函数
 async function main() {
   await checkIn();
   await getDeviceDetail();
   await getYesterdayPoint();
   await restTaoCoin();
+  await buy_goods();
+  await fetchDataAndProcessIds();
 
-  // 完成所有 API 调用后，发送累积的日志消息
   await sendLogMessage();
 }
 
