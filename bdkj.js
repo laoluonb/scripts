@@ -4,6 +4,7 @@
 @Date: 2024.06.24 19:47
 @Description: 本电科技每日签到 和设备详情
               v1.1 添加了使用和购买加速卡功能
+              v1.2 添加了自动提现功能
 ------------------------------------------
 变量名 kiwisWtoken
 变量值 wx抓https://www.bdkjcdn.com/wapi/任意请求头
@@ -28,6 +29,7 @@ const axios = require('axios');
 const kiwisWtoken = ''; // wx抓https://www.bdkjcdn.com/wapi/任意请求头
 const userId = qq号; // cq需要发送的qq号
 const goodsId = 2; // 1为加速1天卡 2为加速3天卡
+const point = 500;//提现积分100=1元 5元起提
 
 let logMessage = ''; // 该处默认即可
 
@@ -322,6 +324,45 @@ async function processId(id) {
   }
 }
 
+//自动提现
+async function withdrawPoints() {
+  let data = JSON.stringify({
+    "point": point 
+  });
+
+  let config = {
+    method: 'POST',
+    url: 'https://www.bdkjcdn.com/wapi/financial/withdraw',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090a1b)XWEB/9165',
+      'xweb_xhr': '1',
+      'kiwis-wtoken': kiwisWtoken,
+      'content-type': 'application/json;charset=UTF-8',
+      'sec-fetch-site': 'cross-site',
+      'sec-fetch-mode': 'cors',
+      'sec-fetch-dest': 'empty',
+      'referer': 'https://servicewechat.com/wx003e375904180915/67/page-frame.html',
+      'accept-language': 'zh-CN,zh;q=0.9'
+    },
+    data: data
+  };
+
+  try {
+    const response = await axios.request(config);
+    const { success, errorMsg } = response.data;
+    if (success) {
+      console.log('提现成功');
+      logMessage += '提现成功\n';
+    } else {
+      console.error(`提现失败: ${errorMsg}`);
+      logMessage += `提现失败: ${errorMsg}\n`;
+    }
+  } catch (error) {
+    console.error('提现失败:', error.message);
+    logMessage += `提现失败: ${error.message}\n`;
+  }
+}
+
 // 主流程函数
 async function main() {
   await checkIn();
@@ -330,6 +371,7 @@ async function main() {
   await restTaoCoin();
   await buy_goods();
   await fetchDataAndProcessIds();
+  await withdrawPoints();
 
   await sendLogMessage();
 }
